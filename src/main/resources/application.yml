@@ -1,0 +1,12 @@
+server:
+  port: 7787
+spring:
+  application:
+    name: import-gdelt
+
+logging:
+  path: /home/yinlei/logs/
+  file: import-gdelt.log
+  level:
+    root: info
+    com.cethik: debug
