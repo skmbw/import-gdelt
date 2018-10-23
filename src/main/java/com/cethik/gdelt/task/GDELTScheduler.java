@@ -5,6 +5,7 @@ import com.cethik.geomesa.datastore.GeoMesaDataSource;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -132,7 +133,7 @@ public class GDELTScheduler implements InitializingBean {
 //        geoMesaDataSource.createTable(featureType);
     }
 
-    @Scheduled(cron="0 38/15 * * * ?") // cron="0 5/15 * * * ?" // 每小时的5分钟开始，每15分钟执行一次
+    @Scheduled(cron="0 1/15 * * * ?") // cron="0 5/15 * * * ?" // 每小时的5分钟开始，每15分钟执行一次
     public void schedule() {
         LOGGER.debug("现在时间是=[{}].", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now()));
 
@@ -186,6 +187,11 @@ public class GDELTScheduler implements InitializingBean {
                     // Point
                     String lat = record.get(i); // 纬度
                     String lng = record.get(++i); //经度
+                    if (StringUtils.isBlank(lat)) { // 模拟经纬度数据，如果经纬度为空，那么会报 Null geometry in feature
+                        Double[] d = GDELTUtils.getLatAndLng(record);
+                        lng = d[0].toString();
+                        lat = d[1].toString();
+                    }
                     builder.set(i - ++j, "POINT (" + lng + " " + lat + ")");
                     break;
                 default:
