@@ -131,6 +131,8 @@ public class GDELTScheduler implements InitializingBean {
 
 //        geoMesaDataSource.deleteTable("newgdelt");
 //        geoMesaDataSource.createTable(featureType);
+
+        LOGGER.info("Start GDELT V2.0 Importer Scheduler Success.");
     }
 
     @Scheduled(cron="0 1/15 * * * ?") // cron="0 5/15 * * * ?" // 每小时的5分钟开始，每15分钟执行一次
