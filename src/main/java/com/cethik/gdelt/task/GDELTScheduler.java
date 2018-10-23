@@ -32,11 +32,11 @@ public class GDELTScheduler implements InitializingBean {
             throw new RuntimeException("property [geoMesaDataSource] cannot be null.");
         }
         // 初始化数据库表
-        String ecql = "";
+        String ecql = ""; // 可读性更好，而且编译器会在底层使用StringBuilder优化，没有性能损失
 
         // EVENTID AND DATE ATTRIBUTES
         ecql += "GlobalEventID:String,";
-        ecql += "Date:String,";
+        ecql += "Date:Date,";
         ecql += "MonthYear:String,";
         ecql += "Year:String,";
         ecql += "FractionDate:Double,";
@@ -67,7 +67,7 @@ public class GDELTScheduler implements InitializingBean {
 
         // EVENT ACTION ATTRIBUTES
         ecql += "IsRootEvent:Integer,";
-        ecql += "EventCode:String,";
+        ecql += "EventCode:String:index=true,";
         ecql += "EventBaseCode:String,";
         ecql += "EventRootCode:String,";
         ecql += "QuadClass:Integer,";
@@ -107,7 +107,10 @@ public class GDELTScheduler implements InitializingBean {
         ecql += "DATEADDED:Integer,";
         ecql += "SOURCEURL:String,";
 
-        SimpleFeatureType featureType = SimpleFeatureTypes.createType("new_gdelt", ecql);
+        SimpleFeatureType featureType = SimpleFeatureTypes.createType("newgdelt", ecql);
+        featureType.getUserData().put(SimpleFeatureTypes.DEFAULT_DATE_KEY, "Date");
+
+        geoMesaDataSource.createTable(featureType);
     }
 
     @Scheduled(cron="0 25/2 * * * ?") // cron="0 5/15 * * * ?" // 每小时的5分钟开始，每15分钟执行一次
