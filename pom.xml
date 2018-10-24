@@ -71,6 +71,32 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.0.1</version>
+                <configuration>
+                    <!--<artifactItems>-->
+                        <!--<artifactItem>-->
+                            <!--<groupId>junit</groupId>-->
+                            <!--<artifactId>junit</artifactId>-->
+                            <!--<version>4.11</version>-->
+                        <!--</artifactItem>-->
+                    <!--</artifactItems>-->
+                    <outputDirectory>target/lib</outputDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <!--<goal>copy</goal>-->
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 		</plugins>
 	</build>
 
