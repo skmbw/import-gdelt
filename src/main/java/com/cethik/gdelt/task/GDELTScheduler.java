@@ -6,7 +6,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.DateUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.geotools.factory.Hints;
@@ -19,13 +18,15 @@ import org.springframework.scheduling.annotation.Scheduled;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import java.io.File;
-import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -39,7 +40,8 @@ import java.util.Locale;
 public class GDELTScheduler implements InitializingBean {
     private static final Logger LOGGER = LogManager.getLogger(GDELTScheduler.class);
 
-    private static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd", Locale.ENGLISH);
+    private static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd", Locale.US);
+    private static final DateTimeFormatter FORMAT_FULL = DateTimeFormatter.ofPattern("yyyyMMddHHmmss", Locale.US);
 
     @Inject
     private GeoMesaDataSource geoMesaDataSource;
@@ -135,27 +137,50 @@ public class GDELTScheduler implements InitializingBean {
         LOGGER.info("Start GDELT V2.0 Importer Scheduler Success.");
     }
 
-    @Scheduled(cron="0 1/15 * * * ?") // cron="0 5/15 * * * ?" // 每小时的5分钟开始，每15分钟执行一次
+    @Scheduled(cron="0 20 10 * * ?") // cron="0 5/15 * * * ?" // 每小时的5分钟开始，每15分钟执行一次
     public void schedule() {
         LOGGER.debug("现在时间是=[{}].", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now()));
 
-        File file = new File("D:\\downloads\\20181022013000.export.CSV.zip");
-        InputStream is = GDELTUtils.decompress(file);
-        try {
-            LOGGER.info("处理文件：[" + file.getPath() + "]开始...");
-            SimpleFeatureBuilder builder = new SimpleFeatureBuilder(geoMesaDataSource.getSimpleFeatureType("newgdelt"));
-            CSVParser parser = CSVParser.parse(is, StandardCharsets.UTF_8, CSVFormat.TDF);
-            List<SimpleFeature> featureList = new ArrayList<>();
-            for (CSVRecord record : parser) {
-                SimpleFeature feature = buildFeature(record, builder);
-                featureList.add(feature);
+//        File file = new File("D:\\downloads\\20181022013000.export.CSV.zip");
+//        InputStream is = GDELTUtils.decompress(file);
+
+        // 2018-1-1
+        LocalDateTime start = LocalDateTime.of(2018, 1, 1, 0, 0, 0);
+        // 2018-10-25
+        LocalDateTime end = LocalDateTime.of(2018,10, 25, 23, 59, 59);
+
+//        try {
+//            Date date = DateUtils.parseDate("20180101000000", "yyyyMMddHHmmss");
+//            LocalDateTime dateTime = LocalDateTime.of(2018, 1, 1, 0, 0, 0);
+//        } catch (ParseException e) {
+//            LOGGER.error(e);
+//        }
+
+        for (; start.isBefore(end) ; start = start.plusMinutes(15)) {
+            String filePath = start.format(FORMAT_FULL) + ".export.CSV.zip";
+            LOGGER.info("处理文件：[" + filePath + "]开始...");
+            try {
+                byte[] resultArray = GDELTUtils.get("http://data.gdeltproject.org/gdeltv2/" + filePath);
+                byte[] csvByteArray = GDELTUtils.unzip(resultArray);
+                if (csvByteArray == null || csvByteArray.length == 0) {
+                    continue;
+                }
+                ByteArrayInputStream is = new ByteArrayInputStream(csvByteArray);
+
+                SimpleFeatureBuilder builder = new SimpleFeatureBuilder(geoMesaDataSource.getSimpleFeatureType("newgdelt"));
+                CSVParser parser = CSVParser.parse(is, StandardCharsets.UTF_8, CSVFormat.TDF);
+                List<SimpleFeature> featureList = new ArrayList<>();
+                for (CSVRecord record : parser) {
+                    SimpleFeature feature = buildFeature(record, builder);
+                    featureList.add(feature);
+                }
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("数据size=[{}].", featureList.size());
+                }
+                geoMesaDataSource.batchInsert("newgdelt", featureList);
+            } catch (Exception e) {
+                LOGGER.error("解析CSV文件错误。", e);
             }
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("数据size=[{}].", featureList.size());
-            }
-            geoMesaDataSource.batchInsert("newgdelt", featureList);
-        } catch (Exception e) {
-            LOGGER.error("解析CSV文件错误。", e);
         }
     }
 
@@ -163,7 +188,7 @@ public class GDELTScheduler implements InitializingBean {
         String globalEventId = record.get(0);
         // 及时使用字段，底层还是使用字段查询出索引，然后使用索引，so直接使用索引
         builder.set(0, globalEventId);
-        builder.set(1, DateUtils.parseDate(record.get(1), "yyyyMMdd"));
+        builder.set(1, Date.from(LocalDate.parse(record.get(1), FORMAT).atStartOfDay(ZoneOffset.UTC).toInstant()));
         for (int i = 2, j = 0; i <= 60; i++) {
             switch (i) {
                 case 25:

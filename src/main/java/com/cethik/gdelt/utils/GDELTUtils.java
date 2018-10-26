@@ -1,16 +1,20 @@
 package com.cethik.gdelt.utils;
 
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.InputStream;
+import java.io.*;
 import java.math.BigDecimal;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 /**
  * @author yinlei
@@ -39,6 +43,84 @@ public class GDELTUtils {
             LOGGER.error("解压zip文件错误。" + e.getMessage());
         }
         return is;
+    }
+
+    /**
+     * 解压zip格式的数据
+     * @param data 待解压的数据，ISO8859-1格式
+     * @return 解压后的数据，格式由压缩前的数据格式决定
+     */
+    public static byte[] unzip(byte[] data) {
+        if (data == null) {
+            return null;
+        }
+        ByteArrayOutputStream out = null;
+        ByteArrayInputStream in = null;
+        ZipInputStream zin = null;
+        byte[] result = null;
+        try {
+            out = new ByteArrayOutputStream();
+            in = new ByteArrayInputStream(data);
+            zin = new ZipInputStream(in);
+            zin.getNextEntry();
+            byte[] buffer = new byte[1024];
+            int offset;
+            while ((offset = zin.read(buffer)) != -1) {
+                out.write(buffer, 0, offset);
+            }
+            result = out.toByteArray();
+        } catch (IOException e) {
+            LOGGER.error("zip解压字符IO错误，msg=[{}]。", e.getMessage());
+        } finally {
+            IOUtils.closeQuietly(zin);
+            IOUtils.closeQuietly(in);
+            IOUtils.closeQuietly(out);
+        }
+        return result;
+    }
+
+    public static byte[] get(String url) {
+        try {
+            URL httpUrl = new URL(url);
+            HttpURLConnection connection = getHttpConnection(httpUrl);
+            connection.connect();
+            return getBytes(connection);
+        } catch (MalformedURLException e) {
+            LOGGER.error("url format error, msg=[{}].", e.getMessage());
+        } catch (IOException e) {
+            LOGGER.error("http connection io error., msg=[{}].", e);
+        }
+        return null;
+    }
+
+    private static HttpURLConnection getHttpConnection(URL url) {
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setDoInput(true);
+            connection.setDoOutput(true);
+            connection.setConnectTimeout(24 * 1000);
+            connection.setReadTimeout(50 * 1000);
+            connection.setRequestMethod("GET");
+        } catch (Exception e) {
+            LOGGER.error("build http url connection error, msg=[{}].", e.getMessage());
+        }
+        return connection;
+    }
+
+    private static byte[] getBytes(HttpURLConnection connection) throws IOException {
+        int code = connection.getResponseCode();
+        if (code == 200) {
+            InputStream inputStream = connection.getInputStream();
+            byte[] response = IOUtils.toByteArray(inputStream);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(new String(response, "UTF-8"));
+            }
+            return response;
+        } else {
+            LOGGER.error("invoke error, code=[{}]", code);
+        }
+        return null;
     }
 
     /**
