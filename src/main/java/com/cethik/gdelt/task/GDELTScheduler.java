@@ -137,24 +137,14 @@ public class GDELTScheduler implements InitializingBean {
         LOGGER.info("Start GDELT V2.0 Importer Scheduler Success.");
     }
 
-    @Scheduled(cron="0 20 10 * * ?") // cron="0 5/15 * * * ?" // 每小时的5分钟开始，每15分钟执行一次
+    @Scheduled(cron="0 50 10 * * ?") // cron="0 5/15 * * * ?" // 每小时的5分钟开始，每15分钟执行一次
     public void schedule() {
         LOGGER.debug("现在时间是=[{}].", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now()));
-
-//        File file = new File("D:\\downloads\\20181022013000.export.CSV.zip");
-//        InputStream is = GDELTUtils.decompress(file);
 
         // 2018-1-1
         LocalDateTime start = LocalDateTime.of(2018, 1, 1, 0, 0, 0);
         // 2018-10-25
         LocalDateTime end = LocalDateTime.of(2018,10, 25, 23, 59, 59);
-
-//        try {
-//            Date date = DateUtils.parseDate("20180101000000", "yyyyMMddHHmmss");
-//            LocalDateTime dateTime = LocalDateTime.of(2018, 1, 1, 0, 0, 0);
-//        } catch (ParseException e) {
-//            LOGGER.error(e);
-//        }
 
         for (; start.isBefore(end) ; start = start.plusMinutes(15)) {
             String filePath = start.format(FORMAT_FULL) + ".export.CSV.zip";
