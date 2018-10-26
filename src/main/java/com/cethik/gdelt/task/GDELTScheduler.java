@@ -146,6 +146,8 @@ public class GDELTScheduler implements InitializingBean {
         // 2018-10-25
         LocalDateTime end = LocalDateTime.of(2018,10, 25, 23, 59, 59);
 
+        long count = 0;
+
         for (; start.isBefore(end) ; start = start.plusMinutes(15)) {
             String filePath = start.format(FORMAT_FULL) + ".export.CSV.zip";
             LOGGER.info("处理文件：[" + filePath + "]开始...");
@@ -164,8 +166,10 @@ public class GDELTScheduler implements InitializingBean {
                     SimpleFeature feature = buildFeature(record, builder);
                     featureList.add(feature);
                 }
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("数据size=[{}].", featureList.size());
+                if (LOGGER.isInfoEnabled()) {
+                    int size = featureList.size();
+                    count += size;
+                    LOGGER.info("数据size=[{}], total=[{}].", size, count);
                 }
                 geoMesaDataSource.batchInsert("newgdelt", featureList);
             } catch (Exception e) {

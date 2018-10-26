@@ -145,9 +145,9 @@ public class GDELTUtils {
         if (StringUtils.isAnyBlank(lat, lng)) {
             latitude = getLat();
             longitude = getLng();
-            LOGGER.debug("没有获取到经纬度,模拟的经纬度是lat=[" + latitude + "], lng=[" + longitude + "]");
+//            LOGGER.debug("没有获取到经纬度,模拟的经纬度是lat=[" + latitude + "], lng=[" + longitude + "]");
         } else {
-            LOGGER.debug("经纬度是lat=[" + lat + "], lng=[" + lng + "]");
+//            LOGGER.debug("经纬度是lat=[" + lat + "], lng=[" + lng + "]");
             latitude = Double.parseDouble(lat);
             longitude = Double.parseDouble(lng);
         }
