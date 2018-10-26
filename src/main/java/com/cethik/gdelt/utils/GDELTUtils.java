@@ -112,11 +112,7 @@ public class GDELTUtils {
         int code = connection.getResponseCode();
         if (code == 200) {
             InputStream inputStream = connection.getInputStream();
-            byte[] response = IOUtils.toByteArray(inputStream);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(new String(response, "UTF-8"));
-            }
-            return response;
+            return IOUtils.toByteArray(inputStream);
         } else {
             LOGGER.error("invoke error, code=[{}]", code);
         }
